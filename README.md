@@ -3,6 +3,7 @@
 AI Agent untuk tracking transaksi keuangan via Google Sheets menggunakan Google ADK.
 
 ## Features
+
 - ✅ Read/Write/Append data ke Google Sheets
 - ✅ Create new sheets
 - ✅ List all sheets & check empty sheets
@@ -11,6 +12,7 @@ AI Agent untuk tracking transaksi keuangan via Google Sheets menggunakan Google 
 - ✅ Lightweight binary (~50MB RAM)
 
 ## Tech Stack
+
 - **Framework**: Google ADK (Agent Development Kit)
 - **Language**: Golang 1.25
 - **LLM**: Gemini 2.5 Flash / Flash Lite
@@ -22,6 +24,7 @@ AI Agent untuk tracking transaksi keuangan via Google Sheets menggunakan Google 
 ## Setup Guide
 
 ### 1. Prerequisites
+
 - Go 1.25+
 - Google Cloud Platform account (free tier)
 - Google AI Studio account (for Gemini API key)
@@ -29,12 +32,14 @@ AI Agent untuk tracking transaksi keuangan via Google Sheets menggunakan Google 
 ### 2. Google Cloud Setup (Service Account)
 
 #### A. Enable Google Sheets API
+
 1. Buka [Google Cloud Console](https://console.cloud.google.com)
 2. Create new project atau pilih existing project
 3. Navigate ke **APIs & Services** → **Library**
 4. Search "Google Sheets API" → **Enable**
 
 #### B. Create Service Account
+
 1. Navigate ke **IAM & Admin** → **Service Accounts**
 2. Click **Create Service Account**
 3. Isi details:
@@ -43,6 +48,7 @@ AI Agent untuk tracking transaksi keuangan via Google Sheets menggunakan Google 
 4. Click **Done**
 
 #### C. Generate JSON Key
+
 1. Click pada service account yang baru dibuat
 2. Go to **Keys** tab → **Add Key** → **Create new key**
 3. Pilih **JSON** format → **Create**
@@ -53,14 +59,17 @@ AI Agent untuk tracking transaksi keuangan via Google Sheets menggunakan Google 
 ### 3. Google Sheets Setup
 
 #### A. Create Spreadsheet
+
 1. Buka [Google Sheets](https://sheets.google.com)
 2. Create **Blank spreadsheet**
 3. Rename sheet (opsional): `Sheet1` atau nama lain
 
 #### B. Get Spreadsheet ID
+
 URL format: `https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/edit`
 
 **Contoh:**
+
 ```
 https://docs.google.com/spreadsheets/d/1hHreim652PxXy7Y-WDki9SVd-Ne425sxLBJCN8aiLGk/edit
                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -70,6 +79,7 @@ https://docs.google.com/spreadsheets/d/1hHreim652PxXy7Y-WDki9SVd-Ne425sxLBJCN8ai
 Copy ID tersebut (bagian setelah `/d/` dan sebelum `/edit`)
 
 #### C. Share Spreadsheet dengan Service Account
+
 1. Buka file `sa-credentials.json`
 2. Copy email dari field `client_email`:
    ```json
@@ -92,10 +102,11 @@ Copy ID tersebut (bagian setelah `/d/` dan sebelum `/edit`)
 ## Installation
 
 ### 1. Clone & Setup
+
 ```bash
 # Clone repository
-git clone <your-repo>
-cd go-agent-tracker
+git clone https://github.com/Faishalbhitex/goadk-agent-tracker
+cd goadk-agent-tracker
 
 # Install dependencies
 go mod tidy
@@ -104,6 +115,7 @@ go mod tidy
 ### 2. Configure Environment
 
 Create `.env` file di root project:
+
 ```bash
 # Gemini API Key
 GOOGLE_API_KEY=your_gemini_api_key_here
@@ -123,8 +135,9 @@ mv ~/Downloads/your-project-xxxxx.json config/sa-credentials.json
 ### 4. Verify Setup
 
 Project structure harus seperti ini:
+
 ```
-go-agent-tracker/
+goadk-agent-tracker/
 ├── .env                      # API keys (gitignored)
 ├── config/
 │   └── sa-credentials.json   # Service account JSON (gitignored)
@@ -140,6 +153,7 @@ go-agent-tracker/
 ## Running the Agent
 
 ### CLI Mode
+
 ```bash
 # Development
 go run ./cmd/bot/main.go
@@ -150,6 +164,7 @@ go build -o bin/agenttracker ./cmd/bot/main.go
 ```
 
 ### Web UI Mode
+
 ```bash
 go run ./cmd/bot/main.go web api webui
 
@@ -185,16 +200,19 @@ Agent → Sheet 'December2024' created successfully
 ### Recommended Models (Stable Free Tier)
 
 **Best for production:**
+
 - `gemini-2.5-flash` ✅ **RECOMMENDED**
 - `gemini-2.5-flash-lite` ✅ Good for high volume
 
 **Avoid (stricter free tier limits):**
+
 - `gemini-2.0-flash` ⚠️ Limited quota
 - `gemini-2.0-flash-lite` ⚠️ Limited quota
 
 ### Change Model
 
 Edit `internal/agent/tracker.go`:
+
 ```go
 model, err := gemini.NewModel(ctx, "gemini-2.5-flash", &genai.ClientConfig{
     APIKey: os.Getenv("GOOGLE_API_KEY"),
@@ -203,11 +221,11 @@ model, err := gemini.NewModel(ctx, "gemini-2.5-flash", &genai.ClientConfig{
 
 ### Free Tier Limits
 
-| Model | Requests/Day | Requests/Min |
-|-------|--------------|--------------|
-| gemini-2.5-flash | ~1500 | 15 |
-| gemini-2.5-flash-lite | ~1500 | 15 |
-| gemini-1.5-flash | 1500 | 15 |
+| Model                 | Requests/Day | Requests/Min |
+| --------------------- | ------------ | ------------ |
+| gemini-2.5-flash      | ~1500        | 15           |
+| gemini-2.5-flash-lite | ~1500        | 15           |
+| gemini-1.5-flash      | 1500         | 15           |
 
 ---
 
@@ -268,27 +286,37 @@ Agent memiliki 6 built-in tools:
 ## Troubleshooting
 
 ### Error: "credentials: could not find default credentials"
+
 **Fix:**
+
 - Pastikan `GOOGLE_SA_PATH` di `.env` pointing ke file JSON yang benar
 - Pastikan file `sa-credentials.json` exist dan valid JSON
 
 ### Error: "The caller does not have permission"
+
 **Fix:**
+
 - Pastikan spreadsheet sudah di-share ke email service account
 - Check permission harus **Editor**, bukan **Viewer**
 
 ### Error: "API key not valid"
+
 **Fix:**
+
 - Verify API key di [AI Studio](https://aistudio.google.com/app/apikey)
 - Pastikan API key di `.env` tidak ada extra spaces/newlines
 
 ### Error: "Quota exceeded"
+
 **Fix:**
+
 - Ganti model ke `gemini-2.5-flash` (lebih generous free tier)
 - Atau buat multiple API keys untuk rotation
 
 ### Error: "Sheet not found"
+
 **Fix:**
+
 - Verify spreadsheet ID benar (copy dari URL)
 - Pastikan spreadsheet sudah di-share ke service account
 
@@ -297,6 +325,7 @@ Agent memiliki 6 built-in tools:
 ## Optimization Tips
 
 ### 1. Multiple API Keys (Unlimited Free Tier)
+
 Buat beberapa Google accounts → multiple Gemini API keys:
 
 ```bash
@@ -309,12 +338,16 @@ GOOGLE_API_KEY_3=key_from_account_3
 Implement rotation di code untuk auto-switch saat quota habis.
 
 ### 2. Response Caching
+
 Cache responses untuk queries yang sering (e.g., "list sheets"):
+
 - Reduce LLM calls by 50-70%
 - Save quota untuk complex operations
 
 ### 3. Use Lite Model for Simple Tasks
+
 `gemini-2.5-flash-lite` untuk tasks sederhana seperti:
+
 - List sheets
 - Check empty sheets
 - Simple reads

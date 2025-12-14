@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"finagent/internal/agent"
+	"finagent/internal/agent/tools"
 
 	"github.com/joho/godotenv"
 	agentpkg "google.golang.org/adk/agent"
@@ -21,7 +22,12 @@ func main() {
 
 	ctx := context.Background()
 
-	trackerAgent, err := agent.NewTrackerAgent(ctx)
+	adkToolSheets, err := tools.NewAdkToolSheets()
+	if err != nil {
+		log.Fatalf("Failed to create adk tools sheets: %v", err)
+	}
+
+	trackerAgent, err := agent.NewTrackerAgent(ctx, adkToolSheets)
 	if err != nil {
 		log.Fatalf("Failed to create tracker agent: %v", err)
 	}

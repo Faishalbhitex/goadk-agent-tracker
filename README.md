@@ -1,18 +1,26 @@
 # Go Agent Tracker
 
-Agent AI untuk mencatat transaksi keuangan ke Google Sheets menggunakan Google ADK.
+Bot AI sederhana untuk tracking keuangan via Google Sheets.
 
-## 📋 Fitur
+## Fitur Utama
 
-- Baca/Tulis data ke Google Sheets
-- Buat sheet baru
-- List semua sheet & cek sheet kosong
-- Interface bahasa natural
-- CLI interaktif
+- 📊 Baca/tulis/tambah data ke Google Sheets
+- 🤖 Chat natural language dengan AI
+- 💻 CLI interaktif & Web UI
+- 🚀 Binary kecil (~50MB RAM)
 
-## 🚀 Instalasi Cepat
+## Tech Stack
 
-### 1. Clone & Setup
+- **Framework**: Google ADK
+- **Language**: Go 1.25
+- **LLM**: Gemini 2.5 Flash
+- **Storage**: Google Sheets API
+
+---
+
+## Setup Cepat
+
+### 1. Install Dependencies
 
 ```bash
 git clone https://github.com/Faishalbhitex/goadk-agent-tracker.git
@@ -20,110 +28,230 @@ cd goadk-agent-tracker
 go mod tidy
 ```
 
-2. Setup Google Cloud
+### 2. Setup Google Cloud
 
-1. Buat Service Account di Google Cloud Console
-1. Download JSON key, rename jadi sa-credentials.json, taruh di folder config/
-1. Enable Google Sheets API
+#### A. Enable Google Sheets API
 
-1. Setup Google Sheets
+1. Buka [Google Cloud Console](https://console.cloud.google.com)
+2. Pilih project atau buat baru
+3. Menu **APIs & Services → Library**
+4. Cari "Google Sheets API" → **Enable**
 
-1. Buat Spreadsheet baru di Google Sheets
-1. Share spreadsheet ke email service account (dari file JSON) dengan permission Editor
-1. Ambil Spreadsheet ID dari URL:
+#### B. Buat Service Account
 
-   ```
-   https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/edit
-   ```
+1. Menu **IAM & Admin → Service Accounts**
+2. Klik **Create Service Account**
+3. Isi nama (contoh: `sheet-tracker`)
+4. Role: **Editor**
+5. Klik **Done**
 
-1. Setup Gemini API
+#### C. Download JSON Key
 
-1. Dapatkan API Key dari Google AI Studio
-
-1. Konfigurasi
-
-Buat file .env di root project:
+1. Klik service account yang baru dibuat
+2. Tab **Keys → Add Key → Create new key**
+3. Pilih **JSON** → **Create**
+4. File JSON akan otomatis download
+5. Rename jadi `sa-credentials.json`
+6. Pindahkan ke folder `config/`
 
 ```bash
-# Salin dari .env.example
-cp .env.example .env
-
-# Edit file .env
-nano .env
+mv ~/Downloads/your-project-xxxxx.json config/sa-credentials.json
 ```
 
-Isi dengan:
+### 3. Setup Google Sheets
+
+#### A. Buat Spreadsheet
+
+1. Buka [Google Sheets](https://sheets.google.com)
+2. Buat spreadsheet baru
+3. Copy **Spreadsheet ID** dari URL
+
+```
+https://docs.google.com/spreadsheets/d/YOUR_SPREADSHEET_ID_HERE/edit
+                                        ^^^^^^^^^^^^^^^^^^^^^^
+                                        Ini yang perlu dicopy
+```
+
+#### B. Share ke Service Account
+
+1. Buka file `config/sa-credentials.json`
+2. Copy value dari `"client_email"`
+3. Di Google Sheets, klik **Share**
+4. Paste email service account
+5. Set permission: **Editor**
+6. Uncheck "Notify people"
+7. Klik **Share**
+
+### 4. Dapatkan Gemini API Key
+
+1. Buka [Google AI Studio](https://aistudio.google.com/apikey)
+2. Klik **Create API Key**
+3. Copy API key
+
+### 5. Konfigurasi Environment
+
+Buat file `.env` di root project:
 
 ```bash
-GOOGLE_API_KEY=your_gemini_api_key_here
+# Gemini API Key
+GOOGLE_API_KEY=your_api_key_here
+
+# Google Sheets
 SPREADSHEET_ID=your_spreadsheet_id_here
 GOOGLE_SA_PATH=config/sa-credentials.json
 ```
 
-▶️ Menjalankan
+### 6. Struktur Project
 
-CLI Interaktif (Rekomendasi)
-
-```bash
-# Build
-go build -o bin/tracker ./cmd/cli/main.go
-
-# Jalankan
-./bin/tracker
-```
-
-Web UI (Debugging)
-
-```bash
-go build -o bin/tracker-web ./cmd/adk/main.go
-./bin/tracker-web web api webui
-# Buka: http://localhost:8080/ui/
-```
-
-📖 Contoh Penggunaan
-
-```
-> list semua sheet
-Agent: Sheet1, nota rokok, Sheet3
-
-> cek sheet yang kosong
-Agent: Sheet3 kosong
-
-> tambah transaksi: tanggal 2024-12-14, merchant Indomaret, jumlah 50000, kategori Shopping
-Agent: Transaksi berhasil ditambahkan!
-
-> buat sheet baru Desember2024
-Agent: Sheet 'Desember2024' berhasil dibuat
-```
-
-🛠 Tools yang Tersedia
-
-1. read_from_sheet - Baca data dari sheet
-2. write_to_sheet - Tulis data ke sheet
-3. append_to_sheet - Tambah data baru
-4. create_new_sheet - Buat sheet baru
-5. list_sheets - List semua sheet
-6. check_sheet_empty - Cek apakah sheet kosong
-
-📁 Struktur Project
+Pastikan struktur seperti ini:
 
 ```
 goadk-agent-tracker/
-├── cmd/              # Entry point CLI & Web
-├── internal/         # Core agent & tools
-├── config/           # Konfigurasi
-├── bin/              # Binary hasil build
-└── .env              # Environment variables
+├── .env                      # API keys (jangan commit)
+├── config/
+│   └── sa-credentials.json   # Service account (jangan commit)
+├── cmd/
+│   ├── adk/main.go          # ADK launcher
+│   └── cli/main.go          # Custom CLI
+├── internal/
+│   ├── agent/
+│   └── tools/
+└── go.mod
 ```
 
-❓ Troubleshooting
+---
 
-· "credentials not found": Pastikan sa-credentials.json ada di folder config/
-· "no permission": Pastikan spreadsheet sudah di-share ke email service account
-· "API key invalid": Cek API key di .env sudah benar
+## Cara Pakai
 
-📞 Kontak
+### Option 1: CLI Mode (Recommended)
 
-Ada masalah? Buka issue di GitHub atau kontak developer.
+```bash
+# Build
+go build -o bin/agenttracker-cli ./cmd/cli/main.go
 
-Selamat mencoba! 🎯
+# Run
+./bin/agenttracker-cli
+```
+
+**Contoh chat:**
+
+```
+> list all sheets
+Agent: You have: Sheet1, nota rokok, Sheet3
+
+> which sheets are empty?
+Agent: Sheet3 is empty
+
+> read Sheet1 range A1:D10
+Agent: [Tampilkan data...]
+
+> tambah transaksi: tanggal 2024-12-14, toko Indomaret, jumlah 50000, kategori Belanja
+Agent: Transaction added successfully!
+```
+
+### Option 2: Web UI Mode
+
+```bash
+# Build
+go build -o bin/agenttracker ./cmd/adk/main.go
+
+# Run Web UI
+./bin/agenttracker web api webui
+
+# Buka browser
+http://localhost:8080/ui/
+```
+
+Web UI features:
+
+- Event trace visualization
+- Session management
+- Tool execution inspector
+
+---
+
+## Tools Available
+
+Agent punya 6 tools:
+
+| Tool                                  | Fungsi                      | Contoh                                       |
+| ------------------------------------- | --------------------------- | -------------------------------------------- |
+| `list_sheets()`                       | List semua sheets           | -                                            |
+| `check_sheet_empty(name)`             | Cek sheet kosong atau tidak | `check_sheet_empty("Sheet3")`                |
+| `read_from_sheet(name, range)`        | Baca data                   | `read_from_sheet("Sheet1", "A1:D10")`        |
+| `write_to_sheet(name, range, values)` | Tulis data                  | `write_to_sheet("Sheet1", "A2:D2", [[...]])` |
+| `append_to_sheet(name, values)`       | Tambah row baru             | `append_to_sheet("Sheet1", [[...]])`         |
+| `create_new_sheet(title)`             | Buat sheet baru             | `create_new_sheet("December2024")`           |
+
+---
+
+## Troubleshooting
+
+### Error: "credentials: could not find default credentials"
+
+- Cek path `GOOGLE_SA_PATH` di `.env` benar
+- Pastikan file `sa-credentials.json` ada dan valid
+
+### Error: "The caller does not have permission"
+
+- Pastikan spreadsheet sudah di-share ke email service account
+- Permission harus **Editor**, bukan Viewer
+
+### Error: "API key not valid"
+
+- Cek API key di [AI Studio](https://aistudio.google.com/apikey)
+- Pastikan tidak ada spasi/newline di `.env`
+
+### Error: "Quota exceeded"
+
+- Gunakan model `gemini-2.5-flash` (free tier lebih besar)
+- Atau buat multiple API keys untuk rotasi
+
+---
+
+## Model Configuration
+
+**Recommended (Stable Free Tier):**
+
+- ✅ `gemini-2.5-flash` (default)
+- ✅ `gemini-2.5-flash-lite` (untuk high volume)
+
+**Avoid (Limited Quota):**
+
+- ⚠️ `gemini-2.0-flash`
+- ⚠️ `gemini-2.0-flash-lite`
+
+Ganti model di `internal/agent/tracker.go`:
+
+```go
+model, err := gemini.NewModel(ctx, "gemini-2.5-flash", &genai.ClientConfig{
+    APIKey: os.Getenv("GOOGLE_API_KEY"),
+})
+```
+
+---
+
+## Roadmap
+
+- [x] Core agent dengan Google Sheets tools
+- [x] Custom CLI dengan tool visibility
+- [x] ADK Web UI
+- [ ] Telegram bot integration
+- [ ] OCR untuk scan struk (multimodal)
+- [ ] Human-in-the-loop approval
+- [ ] Multi-user support
+- [ ] Database untuk history
+
+---
+
+## License
+
+MIT
+
+## Support
+
+Ada masalah? Buka [GitHub Issue](https://github.com/Faishalbhitex/goadk-agent-tracker/issues)
+
+---
+
+**Happy tracking! 📊💰**

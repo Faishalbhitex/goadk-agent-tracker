@@ -1,83 +1,83 @@
 package main
 
 import (
-    "bufio"
-    "context"
-    "fmt"
-    "log"
-    "os"
-    "strings"
+	"bufio"
+	"context"
+	"fmt"
+	"log"
+	"os"
+	"strings"
 
-    "finagent/internal/agent"
-    "finagent/internal/agent/tools"
-    "finagent/internal/cli"
+	"finagent/internal/agent"
+	"finagent/internal/agent/tools"
+	"finagent/internal/cli"
 
-    "github.com/joho/godotenv"
-    "google.golang.org/adk/runner"
-    "google.golang.org/adk/session"
+	"github.com/joho/godotenv"
+	"google.golang.org/adk/runner"
+	"google.golang.org/adk/session"
 )
 
 func main() {
-    if err := godotenv.Load(); err != nil {
-        log.Println("No .env file found")
-    }
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found")
+	}
 
-    ctx := context.Background()
+	ctx := context.Background()
 
-    // Init tools & agent
-    adkTools, err := tools.NewAdkToolSheets()
-    if err != nil {
-        log.Fatalf("Failed to create tools: %v", err)
-    }
+	// Init tools & agent
+	adkTools, err := tools.NewAdkToolSheets()
+	if err != nil {
+		log.Fatalf("Failed to create tools: %v", err)
+	}
 
-    trackerAgent, err := agent.NewTrackerAgent(ctx, adkTools)
-    if err != nil {
-        log.Fatalf("Failed to create agent: %v", err)
-    }
+	trackerAgent, err := agent.NewTrackerAgent(ctx, adkTools)
+	if err != nil {
+		log.Fatalf("Failed to create agent: %v", err)
+	}
 
-    // Create session
-    sessionService := session.InMemoryService()
-    runner, err := runner.New(runner.Config{
-        AppName:        "financial_tracker",
-        Agent:          trackerAgent,
-        SessionService: sessionService,
-    })
-    if err != nil {
-        log.Fatalf("Failed to create runner: %v", err)
-    }
+	// Create session
+	sessionService := session.InMemoryService()
+	runner, err := runner.New(runner.Config{
+		AppName:        "financial_tracker",
+		Agent:          trackerAgent,
+		SessionService: sessionService,
+	})
+	if err != nil {
+		log.Fatalf("Failed to create runner: %v", err)
+	}
 
-    sess, err := sessionService.Create(ctx, &session.CreateRequest{
-        AppName: "financial_tracker",
-        UserID:  "user_cli",
-    })
-    if err != nil {
-        log.Fatalf("Failed to create session: %v", err)
-    }
+	sess, err := sessionService.Create(ctx, &session.CreateRequest{
+		AppName: "financial_tracker",
+		UserID:  "user_cli",
+	})
+	if err != nil {
+		log.Fatalf("Failed to create session: %v", err)
+	}
 
-    // CLI Runner
-    cliRunner := cli.NewCLIRunner(runner, sess.Session.ID(), "user_cli")
+	// CLI Runner
+	cliRunner := cli.NewCLIRunner(runner, sess.Session.ID(), "user_cli")
 
-    fmt.Println(cli.Cyan("=== Financial Tracker Agent CLI ==="))
-    fmt.Println(cli.Gray("Type 'exit' to quit\n"))
+	fmt.Println(cli.Cyan("=== Financial Tracker Agent CLI ==="))
+	fmt.Println(cli.Gray("Type 'exit' to quit\n"))
 
-    scanner := bufio.NewScanner(os.Stdin)
-    for {
-        fmt.Print(cli.Blue("> "))
-        if !scanner.Scan() {
-            break
-        }
+	scanner := bufio.NewScanner(os.Stdin)
+	for {
+		fmt.Print(cli.Blue("> "))
+		if !scanner.Scan() {
+			break
+		}
 
-        input := strings.TrimSpace(scanner.Text())
-        if input == "" {
-            continue
-        }
-        if input == "exit" || input == "quit" {
-            fmt.Println(cli.Yellow("Goodbye!"))
-            break
-        }
+		input := strings.TrimSpace(scanner.Text())
+		if input == "" {
+			continue
+		}
+		if input == "exit" || input == "quit" {
+			fmt.Println(cli.Yellow("Goodbye!"))
+			break
+		}
 
-        if err := cliRunner.Run(ctx, input); err != nil {
-            fmt.Printf("%s\n", cli.Red(fmt.Sprintf("Error: %v", err)))
-        }
-    }
+		if err := cliRunner.Run(ctx, input); err != nil {
+			fmt.Printf("%s\n", cli.Red(fmt.Sprintf("Error: %v", err)))
+		}
+	}
 }

@@ -18,7 +18,7 @@ func NewTrackerAgent(ctx context.Context, adkToolSheets []tool.Tool) (agent.Agen
 		return nil, err
 	}
 
-	model, err := gemini.NewModel(ctx, "gemini-2.5-flash", &genai.ClientConfig{
+	model, err := gemini.NewModel(ctx, "gemini-2.5-flash-lite", &genai.ClientConfig{
 		APIKey: os.Getenv("GOOGLE_API_KEY"),
 	})
 	if err != nil {

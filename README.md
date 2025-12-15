@@ -105,8 +105,8 @@ Copy ID tersebut (bagian setelah `/d/` dan sebelum `/edit`)
 
 ```bash
 # Clone repository
-git clone https://github.com/Faishalbhitex/goadk-agent-tracker
-cd goadk-agent-tracker
+git clone <your-repo>
+cd go-agent-tracker
 
 # Install dependencies
 go mod tidy
@@ -137,7 +137,7 @@ mv ~/Downloads/your-project-xxxxx.json config/sa-credentials.json
 Project structure harus seperti ini:
 
 ```
-goadk-agent-tracker/
+go-agent-tracker/
 ├── .env                      # API keys (gitignored)
 ├── config/
 │   └── sa-credentials.json   # Service account JSON (gitignored)
@@ -152,25 +152,69 @@ goadk-agent-tracker/
 
 ## Running the Agent
 
-### CLI Mode
+### 1. Custom CLI (Recommended for Development)
+
+Interactive CLI dengan tool call visibility dan pretty output.
 
 ```bash
-# Development
-go run ./cmd/bot/main.go
+# Build
+go build -o bin/agenttracker-cli ./cmd/cli/main.go
 
-# Production (build binary)
-go build -o bin/agenttracker ./cmd/bot/main.go
+# Run
+./bin/agenttracker-cli
+```
+
+**Features:**
+
+- ✅ Tool call visibility (see what tools agent uses)
+- ✅ Pretty formatted JSON output
+- ✅ Color-coded responses
+- ✅ Interactive REPL
+- ✅ Conversation memory
+
+**Example session:**
+
+```
+> list all sheets
+
+User → list all sheets
+
+🔧 Tool: list_sheets
+   Args:
+   {}
+
+✓ Result: list_sheets
+   Found: 3 sheets
+
+Agent →
+You have: Sheet1, nota rokok, Sheet3
+```
+
+### 2. ADK CLI/Web UI (For Testing & Debugging)
+
+Built-in Google ADK launcher dengan web inspector.
+
+**CLI Mode:**
+
+```bash
+go build -o bin/agenttracker ./cmd/adk/main.go
 ./bin/agenttracker
 ```
 
-### Web UI Mode
+**Web UI Mode:**
 
 ```bash
-go run ./cmd/bot/main.go web api webui
+./bin/agenttracker web api webui
 
-# Open browser
-# → http://localhost:8080/ui/
+# Open browser → http://localhost:8080/ui/
 ```
+
+**Features:**
+
+- Event trace visualization
+- Session management
+- Tool execution inspector
+- Full conversation history
 
 ---
 
@@ -234,18 +278,28 @@ model, err := gemini.NewModel(ctx, "gemini-2.5-flash", &genai.ClientConfig{
 ```
 .
 ├── cmd/
-│   └── bot/
-│       └── main.go          # Entry point with godotenv
+│   ├── adk/
+│   │   └── main.go          # ADK launcher (CLI + Web UI)
+│   └── cli/
+│       └── main.go          # Custom CLI with visibility
 ├── internal/
 │   ├── agent/
-│   │   ├── tracker.go       # Agent initialization & tools setup
-│   │   └── prompt.go        # System prompt & instructions
-│   ├── telegram/
-│   │   └── bot.go           # (Future: Telegram integration)
-│   └── tools/
-│       └── sheet.go         # Google Sheets operations
+│   │   ├── tools/
+│   │   │   ├── types.go     # Tool args & result structs
+│   │   │   ├── sheet.go     # Google Sheets client
+│   │   │   └── adk_sheet.go # ADK tool wrappers
+│   │   ├── tracker.go       # Agent initialization
+│   │   └── prompt.go        # System instructions
+│   ├── cli/
+│   │   ├── runner.go        # Custom runner with events
+│   │   └── display.go       # Pretty print helpers
+│   └── telegram/
+│       └── bot.go           # (Future: Telegram bot)
 ├── config/
 │   └── sa-credentials.json  # Service account (GITIGNORED)
+├── bin/
+│   ├── agenttracker         # ADK binary
+│   └── agenttracker-cli     # Custom CLI binary
 ├── .env                     # Environment variables (GITIGNORED)
 ├── .gitignore
 ├── go.mod
@@ -357,8 +411,10 @@ Cache responses untuk queries yang sering (e.g., "list sheets"):
 ## Roadmap
 
 - [x] Core agent dengan Google Sheets tools
-- [x] CLI & Web UI interface
+- [x] Custom CLI dengan tool visibility
+- [x] ADK Web UI inspector
 - [x] List & check empty sheets
+- [x] Clean tools architecture
 - [ ] Telegram bot integration
 - [ ] OCR for receipt scanning (Multimodal)
 - [ ] Human-in-the-loop approval flow

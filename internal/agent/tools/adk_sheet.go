@@ -44,30 +44,14 @@ func createNewSheet(ctx tool.Context, args CreateSheetArgs) (CreateSheetResult, 
 }
 
 func listSheets(ctx tool.Context, args struct{}) (ListSheetsResult, error) {
-	sheets, err := ListSheets(context.Background())
+	sheets, err := ListSheetsWithInfo(context.Background())
 	if err != nil {
 		return ListSheetsResult{Status: "error", Error: err.Error()}, nil
 	}
-	return ListSheetsResult{Status: "success", Sheets: sheets}, nil
-}
-
-func checkSheetEmpty(ctx tool.Context, args CheckSheetEmptyArgs) (CheckSheetEmptyResult, error) {
-	isEmpty, err := CheckSheetEmpty(context.Background(), args.SheetName)
-	if err != nil {
-		return CheckSheetEmptyResult{Status: "error", Error: err.Error()}, nil
-	}
-
-	msg := fmt.Sprintf("Sheet '%s' is ", args.SheetName)
-	if isEmpty {
-		msg += "empty"
-	} else {
-		msg += "not empty (contains data)"
-	}
-
-	return CheckSheetEmptyResult{
-		Status:  "success",
-		IsEmpty: isEmpty,
-		Message: msg,
+	return ListSheetsResult{
+		Status:      "success",
+		TotalSheets: len(sheets),
+		Sheets:      sheets,
 	}, nil
 }
 
@@ -119,20 +103,9 @@ func NewAdkToolSheets() ([]tool.Tool, error) {
 	listSheetsTool, err := functiontool.New(
 		functiontool.Config{
 			Name:        "list_sheets",
-			Description: "List all sheets in the spreadsheet with their info",
+			Description: "List all sheets with complete info (title, isEmpty, rowCount, colCount)",
 		},
 		listSheets,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	checkEmptyTool, err := functiontool.New(
-		functiontool.Config{
-			Name:        "check_sheet_empty",
-			Description: "Check if a specific sheet is empty or contains data",
-		},
-		checkSheetEmpty,
 	)
 	if err != nil {
 		return nil, err
@@ -144,6 +117,5 @@ func NewAdkToolSheets() ([]tool.Tool, error) {
 		appendTool,
 		createSheetTool,
 		listSheetsTool,
-		checkEmptyTool,
 	}, nil
 }

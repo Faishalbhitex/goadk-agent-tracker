@@ -85,6 +85,32 @@ func (s *SheetClient) CreateSheet(ctx context.Context, sheetTitle string) error 
 	return nil
 }
 
+func (s *SheetClient) ListSheetsWithInfo(ctx context.Context) ([]SheetInfo, error) {
+	resp, err := s.service.Spreadsheets.Get(s.spreadsheetID).Context(ctx).Do()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get spreadsheet info: %v", err)
+	}
+
+	var sheets []SheetInfo
+	for _, sheet := range resp.Sheets {
+		// Check if empty by reading first cell
+		isEmpty := false
+		data, err := s.ReadSheet(ctx, sheet.Properties.Title, "A1")
+		if err == nil && len(data) == 0 {
+			isEmpty = true
+		}
+
+		sheets = append(sheets, SheetInfo{
+			Title:    sheet.Properties.Title,
+			SheetID:  sheet.Properties.SheetId,
+			RowCount: sheet.Properties.GridProperties.RowCount,
+			ColCount: sheet.Properties.GridProperties.ColumnCount,
+			IsEmpty:  isEmpty,
+		})
+	}
+	return sheets, nil
+}
+
 var sheetClient *SheetClient
 
 func InitSheetClient(ctx context.Context) error {
@@ -112,36 +138,6 @@ func CreateNewSheet(ctx context.Context, sheetTitle string) error {
 	return sheetClient.CreateSheet(ctx, sheetTitle)
 }
 
-func (s *SheetClient) ListSheets(ctx context.Context) ([]map[string]interface{}, error) {
-	resp, err := s.service.Spreadsheets.Get(s.spreadsheetID).Context(ctx).Do()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get spreadsheet info: %v", err)
-	}
-
-	var sheets []map[string]interface{}
-	for _, sheet := range resp.Sheets {
-		sheets = append(sheets, map[string]interface{}{
-			"title":    sheet.Properties.Title,
-			"sheetId":  sheet.Properties.SheetId,
-			"rowCount": sheet.Properties.GridProperties.RowCount,
-			"colCount": sheet.Properties.GridProperties.ColumnCount,
-		})
-	}
-	return sheets, nil
-}
-
-func (s *SheetClient) CheckSheetEmpty(ctx context.Context, sheetName string) (bool, error) {
-	data, err := s.ReadSheet(ctx, sheetName, "A1:Z1000")
-	if err != nil {
-		return false, err
-	}
-	return len(data) == 0, nil
-}
-
-func ListSheets(ctx context.Context) ([]map[string]interface{}, error) {
-	return sheetClient.ListSheets(ctx)
-}
-
-func CheckSheetEmpty(ctx context.Context, sheetName string) (bool, error) {
-	return sheetClient.CheckSheetEmpty(ctx, sheetName)
+func ListSheetsWithInfo(ctx context.Context) ([]SheetInfo, error) {
+	return sheetClient.ListSheetsWithInfo(ctx)
 }

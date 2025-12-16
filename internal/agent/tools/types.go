@@ -1,6 +1,6 @@
 package tools
 
-// reade sheet
+// read sheet
 type ReadSheetArgs struct {
 	SheetName     string `json:"sheetName" jsonschema:"Name of the sheet to read from"`
 	RangeNotation string `json:"rangeNotation" jsonschema:"Range in A1 notation (e.g., 'A1:D10')"`
@@ -48,21 +48,18 @@ type CreateSheetResult struct {
 	Error   string `json:"error,omitempty"`
 }
 
-// list sheet
+// list sheets with enhanced info
+type SheetInfo struct {
+	Title    string `json:"title"`
+	SheetID  int64  `json:"sheetId"`
+	RowCount int64  `json:"rowCount"`
+	ColCount int64  `json:"colCount"`
+	IsEmpty  bool   `json:"isEmpty"`
+}
+
 type ListSheetsResult struct {
-	Status string                   `json:"status"`
-	Sheets []map[string]interface{} `json:"sheets,omitempty"`
-	Error  string                   `json:"error,omitempty"`
-}
-
-// check empty sheet
-type CheckSheetEmptyArgs struct {
-	SheetName string `json:"sheetName" jsonschema:"Name of the sheet to check"`
-}
-
-type CheckSheetEmptyResult struct {
-	Status  string `json:"status"`
-	IsEmpty bool   `json:"isEmpty"`
-	Message string `json:"message,omitempty"`
-	Error   string `json:"error,omitempty"`
+	Status      string      `json:"status"`
+	TotalSheets int         `json:"totalSheets,omitempty"`
+	Sheets      []SheetInfo `json:"sheets,omitempty"`
+	Error       string      `json:"error,omitempty"`
 }

@@ -4,6 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"mime"
+	"os"
+	"path/filepath"
 
 	"google.golang.org/adk/agent"
 	"google.golang.org/adk/runner"
@@ -24,10 +27,16 @@ func NewCLIRunner(r *runner.Runner, sessionID, userID string) *CLIRunner {
 	}
 }
 
-func (c *CLIRunner) Run(ctx context.Context, prompt string) error {
-	fmt.Printf("\n%s\n", Cyan(fmt.Sprintf("User → %s", prompt)))
+func (c *CLIRunner) Run(ctx context.Context, text, imagePath string) error {
+	fmt.Printf("\n%s\n", Cyan(fmt.Sprintf("User → %s", text)))
+	if imagePath != "" {
+		fmt.Printf("%s\n", Gray(fmt.Sprintf("Image → %s", imagePath)))
+	}
 
-	userMsg := genai.NewContentFromText(prompt, genai.RoleUser)
+	userMsg, err := c.createContent(text, imagePath)
+	if err != nil {
+		return fmt.Errorf("failed to create content: %w", err)
+	}
 
 	events := c.runner.Run(
 		ctx,
@@ -47,12 +56,10 @@ func (c *CLIRunner) Run(ctx context.Context, prompt string) error {
 
 		if event.Content != nil {
 			for _, part := range event.Content.Parts {
-				// Agent thinking/text
 				if part.Text != "" {
 					fmt.Printf("\n%s\n%s\n", Yellow("Agent →"), part.Text)
 				}
 
-				// Tool calls
 				if part.FunctionCall != nil {
 					fmt.Printf("\n%s %s\n", Magenta("🔧 Tool:"), Bold(part.FunctionCall.Name))
 					if len(part.FunctionCall.Args) > 0 {
@@ -61,16 +68,13 @@ func (c *CLIRunner) Run(ctx context.Context, prompt string) error {
 					}
 				}
 
-				// Tool responses
 				if part.FunctionResponse != nil {
 					fmt.Printf("%s %s\n", Green("✓ Result:"), Bold(part.FunctionResponse.Name))
 
-					// Access Response field directly (it's already map[string]any)
 					if part.FunctionResponse.Response != nil {
 						resp := part.FunctionResponse.Response
 
 						if status, ok := resp["status"].(string); ok && status == "success" {
-							// Show relevant data based on what's in response
 							if data, ok := resp["data"]; ok {
 								dataJSON, _ := json.MarshalIndent(data, "   ", "  ")
 								fmt.Printf("%s\n%s\n", Gray("   Data:"), Gray(string(dataJSON)))
@@ -90,7 +94,6 @@ func (c *CLIRunner) Run(ctx context.Context, prompt string) error {
 						} else if errMsg, ok := resp["error"].(string); ok {
 							fmt.Printf("%s\n", Red(fmt.Sprintf("   Error: %s", errMsg)))
 						} else {
-							// Fallback: show full response
 							respJSON, _ := json.MarshalIndent(resp, "   ", "  ")
 							fmt.Printf("%s\n%s\n", Gray("   Response:"), Gray(string(respJSON)))
 						}
@@ -101,4 +104,31 @@ func (c *CLIRunner) Run(ctx context.Context, prompt string) error {
 	}
 
 	return nil
+}
+
+func (c *CLIRunner) createContent(text, imagePath string) (*genai.Content, error) {
+	parts := []*genai.Part{}
+
+	if text != "" {
+		parts = append(parts, genai.NewPartFromText(text))
+	}
+
+	if imagePath != "" {
+		imageData, err := os.ReadFile(imagePath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read image: %w", err)
+		}
+
+		mimeType := mime.TypeByExtension(filepath.Ext(imagePath))
+		if mimeType == "" {
+			mimeType = "application/octet-stream"
+		}
+
+		parts = append(parts, genai.NewPartFromBytes(imageData, mimeType))
+	}
+
+	return &genai.Content{
+		Parts: parts,
+		Role:  genai.RoleUser,
+	}, nil
 }

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
+	"strings"
 
 	"google.golang.org/api/option"
 	"google.golang.org/api/sheets/v4"
@@ -52,10 +54,86 @@ func (s *SheetClient) WriteSheet(ctx context.Context, sheetName, rangeNotation s
 }
 
 func (s *SheetClient) AppendSheet(ctx context.Context, sheetName string, values [][]interface{}) error {
+	if len(values) == 0 {
+		return fmt.Errorf("no rows to append")
+	}
+
+	// --- 1. Validasi struktur: pastikan 11 kolom
+	for i, row := range values {
+		if len(row) != 11 {
+			return fmt.Errorf("row %d has %d columns, expected 11", i+1, len(row))
+		}
+	}
+
+	// --- 2. Baca jumlah baris saat ini untuk dapatkan nextNo
+	sheetInfoList, err := s.ListSheetsWithInfo(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to list sheets for auto-increment: %v", err)
+	}
+
+	var sheetID int64
+	var rowCount int
+	for _, si := range sheetInfoList {
+		if strings.EqualFold(si.Title, sheetName) {
+			sheetID = si.SheetID
+			rowCount = int(si.RowCount)
+			break
+		}
+	}
+	if sheetID == 0 {
+		return fmt.Errorf("sheet '%s' not found", sheetName)
+	}
+
+	// Header ada di baris 1 → data mulai baris 2
+	nextNo := 1
+	if rowCount > 1 {
+		// Baca nilai terakhir di kolom A (no)
+		lastRow := rowCount // baris terakhir yang berisi data
+		rangeNotation := fmt.Sprintf("%s!A%d:A%d", sheetName, lastRow, lastRow)
+		resp, err := s.service.Spreadsheets.Values.Get(s.spreadsheetID, rangeNotation).Context(ctx).Do()
+		if err == nil && len(resp.Values) > 0 && len(resp.Values[0]) > 0 {
+			if valStr := fmt.Sprintf("%v", resp.Values[0][0]); valStr != "" {
+				if num, errConv := strconv.Atoi(valStr); errConv == nil {
+					nextNo = num + 1
+				}
+			}
+		}
+	}
+
+	// --- 3. Isi kolom "no" (index 0) jika kosong
+	for i := range values {
+		if values[i][0] == nil || values[i][0] == "" {
+			values[i][0] = nextNo
+			nextNo++
+		}
+	}
+
+	// --- 4. Validasi kolom wajib (B=item_name, H=merchant, F=amount, K=receipt_id)
+	for i, row := range values {
+		item_name := fmt.Sprintf("%v", row[1])
+		merchant := fmt.Sprintf("%v", row[7])
+		amount := fmt.Sprintf("%v", row[5])
+		receipt_id := fmt.Sprintf("%v", row[10])
+
+		if strings.TrimSpace(item_name) == "" {
+			return fmt.Errorf("row %d: item_name (col B) is required", i+1)
+		}
+		if strings.TrimSpace(merchant) == "" {
+			return fmt.Errorf("row %d: merchant (col H) is required", i+1)
+		}
+		if strings.TrimSpace(amount) == "" {
+			return fmt.Errorf("row %d: amount (col F) is required", i+1)
+		}
+		if strings.TrimSpace(receipt_id) == "" {
+			return fmt.Errorf("row %d: receipt_id (col K) is required", i+1)
+		}
+	}
+
+	// --- 5. Append ke sheet
 	valueRange := &sheets.ValueRange{
 		Values: values,
 	}
-	_, err := s.service.Spreadsheets.Values.Append(
+	_, err = s.service.Spreadsheets.Values.Append(
 		s.spreadsheetID,
 		sheetName,
 		valueRange,

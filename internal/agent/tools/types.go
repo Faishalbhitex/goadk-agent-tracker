@@ -1,9 +1,39 @@
 package tools
 
-// read sheet
+// Standard column indices
+const (
+	ColNo          = 0
+	ColItemName    = 1
+	ColQty         = 2
+	ColUnit        = 3
+	ColUnitPrice   = 4
+	ColAmount      = 5
+	ColCategory    = 6
+	ColMerchant    = 7
+	ColReceiptDate = 8
+	ColInputSource = 9
+	ColReceiptID   = 10
+)
+
+var DefaultHeaders = []string{
+	"no", "item_name", "qty", "unit", "unit_price",
+	"amount", "category", "merchant", "receipt_date",
+	"input_source", "receipt_id",
+}
+
+// Sheet info
+type SheetInfo struct {
+	Title    string `json:"title"`
+	SheetID  int64  `json:"sheetId"`
+	RowCount int64  `json:"rowCount"`
+	ColCount int64  `json:"colCount"`
+	IsEmpty  bool   `json:"isEmpty"`
+}
+
+// Tool args & results
 type ReadSheetArgs struct {
-	SheetName     string `json:"sheetName" jsonschema:"Name of the sheet to read from"`
-	RangeNotation string `json:"rangeNotation" jsonschema:"Range in A1 notation (e.g., 'A1:D10')"`
+	SheetName     string `json:"sheetName"`
+	RangeNotation string `json:"rangeNotation"`
 }
 
 type ReadSheetResult struct {
@@ -12,11 +42,10 @@ type ReadSheetResult struct {
 	Error  string          `json:"error,omitempty"`
 }
 
-// write sheet
 type WriteSheetArgs struct {
-	SheetName     string          `json:"sheetName" jsonschema:"Name of the sheet to write to"`
-	RangeNotation string          `json:"rangeNotation" jsonschema:"Range in A1 notation"`
-	Values        [][]interface{} `json:"values" jsonschema:"2D array of values to write"`
+	SheetName     string          `json:"sheetName"`
+	RangeNotation string          `json:"rangeNotation"`
+	Values        [][]interface{} `json:"values"`
 }
 
 type WriteSheetResult struct {
@@ -25,10 +54,9 @@ type WriteSheetResult struct {
 	Error   string `json:"error,omitempty"`
 }
 
-// append sheet
 type AppendSheetArgs struct {
-	SheetName string          `json:"sheetName" jsonschema:"Name of the sheet to append to"`
-	Values    [][]interface{} `json:"values" jsonschema:"2D array of rows to append"`
+	SheetName string          `json:"sheetName"`
+	Values    [][]interface{} `json:"values"`
 }
 
 type AppendSheetResult struct {
@@ -37,24 +65,14 @@ type AppendSheetResult struct {
 	Error   string `json:"error,omitempty"`
 }
 
-// create sheet
 type CreateSheetArgs struct {
-	SheetTitle string `json:"sheetTitle" jsonschema:"Title for the new sheet"`
+	SheetTitle string `json:"sheetTitle"`
 }
 
 type CreateSheetResult struct {
 	Status  string `json:"status"`
 	Message string `json:"message,omitempty"`
 	Error   string `json:"error,omitempty"`
-}
-
-// list sheets with enhanced info
-type SheetInfo struct {
-	Title    string `json:"title"`
-	SheetID  int64  `json:"sheetId"`
-	RowCount int64  `json:"rowCount"`
-	ColCount int64  `json:"colCount"`
-	IsEmpty  bool   `json:"isEmpty"`
 }
 
 type ListSheetsResult struct {

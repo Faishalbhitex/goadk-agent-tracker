@@ -3,6 +3,7 @@ package tools
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 
 	"google.golang.org/api/option"
@@ -65,8 +66,23 @@ func (s *SheetClient) AppendSheet(ctx context.Context, sheetName string, values 
 	return nil
 }
 
+var DefaultHeaders = []string{
+	"no",
+	"item_name",
+	"qty",
+	"unit",
+	"unit_price",
+	"amount",
+	"category",
+	"merchant",
+	"receipt_date",
+	"input_source",
+	"receipt_id",
+}
+
 func (s *SheetClient) CreateSheet(ctx context.Context, sheetTitle string) error {
-	req := &sheets.Request{
+	// 1. Buat sheet baru
+	addSheetReq := &sheets.Request{
 		AddSheet: &sheets.AddSheetRequest{
 			Properties: &sheets.SheetProperties{
 				Title: sheetTitle,
@@ -74,15 +90,100 @@ func (s *SheetClient) CreateSheet(ctx context.Context, sheetTitle string) error 
 		},
 	}
 
-	batchUpdate := &sheets.BatchUpdateSpreadsheetRequest{
-		Requests: []*sheets.Request{req},
+	batchReq := &sheets.BatchUpdateSpreadsheetRequest{
+		Requests: []*sheets.Request{addSheetReq},
 	}
 
-	_, err := s.service.Spreadsheets.BatchUpdate(s.spreadsheetID, batchUpdate).Context(ctx).Do()
+	resp, err := s.service.Spreadsheets.BatchUpdate(s.spreadsheetID, batchReq).Context(ctx).Do()
 	if err != nil {
 		return fmt.Errorf("failed to create sheet: %v", err)
 	}
+
+	if len(resp.Replies) == 0 || resp.Replies[0].AddSheet == nil {
+		return fmt.Errorf("sheet creation response invalid")
+	}
+	sheetID := resp.Replies[0].AddSheet.Properties.SheetId
+
+	// 2. Tulis header ke baris pertama
+	headerRange := fmt.Sprintf("%s!A1:%s1", sheetTitle, columnLetter(len(DefaultHeaders)))
+	_, err = s.service.Spreadsheets.Values.Update(s.spreadsheetID, headerRange, &sheets.ValueRange{
+		Values: [][]interface{}{stringSliceToInterfaceSlice(DefaultHeaders)},
+	}).ValueInputOption("RAW").Context(ctx).Do()
+	if err != nil {
+		return fmt.Errorf("failed to write headers: %v", err)
+	}
+
+	// 3. Format header: bold + background hijau muda
+	formatReq := &sheets.Request{
+		RepeatCell: &sheets.RepeatCellRequest{
+			Range: &sheets.GridRange{
+				SheetId:          sheetID,
+				StartRowIndex:    0,
+				EndRowIndex:      1,
+				StartColumnIndex: 0,
+				EndColumnIndex:   int64(len(DefaultHeaders)),
+			},
+			Cell: &sheets.CellData{
+				UserEnteredFormat: &sheets.CellFormat{
+					TextFormat: &sheets.TextFormat{Bold: true},
+					BackgroundColorStyle: &sheets.ColorStyle{
+						RgbColor: &sheets.Color{Red: 0.85, Green: 0.95, Blue: 0.85},
+					},
+				},
+			},
+			Fields: "userEnteredFormat(textFormat,backgroundColorStyle)",
+		},
+	}
+
+	// 4. Auto-resize kolom
+	var resizeRequests []*sheets.Request
+	for i := 0; i < len(DefaultHeaders); i++ {
+		resizeRequests = append(resizeRequests, &sheets.Request{
+			AutoResizeDimensions: &sheets.AutoResizeDimensionsRequest{
+				Dimensions: &sheets.DimensionRange{
+					SheetId:    sheetID,
+					Dimension:  "COLUMNS",
+					StartIndex: int64(i),
+					EndIndex:   int64(i + 1),
+				},
+			},
+		})
+	}
+
+	// 5. Kirim semua format + resize
+	formatBatch := &sheets.BatchUpdateSpreadsheetRequest{
+		Requests: append([]*sheets.Request{formatReq}, resizeRequests...),
+	}
+	_, err = s.service.Spreadsheets.BatchUpdate(s.spreadsheetID, formatBatch).Context(ctx).Do()
+	if err != nil {
+		log.Printf("Warning: failed to format sheet (headers may be unstyled): %v", err)
+		// Tetap lanjut, jangan fail total
+	}
+
 	return nil
+}
+
+// Helper: konversi []string → []interface{}
+func stringSliceToInterfaceSlice(s []string) []interface{} {
+	res := make([]interface{}, len(s))
+	for i, v := range s {
+		res[i] = v
+	}
+	return res
+}
+
+// Helper: angka kolom → huruf (A, B, ..., Z, AA, AB, ...)
+func columnLetter(col int) string {
+	col--
+	if col < 0 {
+		return "A"
+	}
+	letters := ""
+	for col >= 0 {
+		letters = string(rune('A'+(col%26))) + letters
+		col = col/26 - 1
+	}
+	return letters
 }
 
 func (s *SheetClient) ListSheetsWithInfo(ctx context.Context) ([]SheetInfo, error) {

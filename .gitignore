@@ -1,3 +1,5 @@
 .env
 config/*.json
 bin/
+*.txt
+*.bak

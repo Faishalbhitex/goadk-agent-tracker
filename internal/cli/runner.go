@@ -44,7 +44,8 @@ func (c *CLIRunner) Run(ctx context.Context, text, imagePath string) error {
 		c.sessionID,
 		userMsg,
 		agent.RunConfig{
-			StreamingMode: agent.StreamingModeNone,
+			StreamingMode:             agent.StreamingModeNone,
+			SaveInputBlobsAsArtifacts: true,
 		},
 	)
 

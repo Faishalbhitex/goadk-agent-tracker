@@ -6,14 +6,14 @@ import (
 
 	"finagent/internal/agent/tools"
 
-	"google.golang.org/adk/agent"
+	adkagent "google.golang.org/adk/agent"
 	"google.golang.org/adk/agent/llmagent"
 	"google.golang.org/adk/model/gemini"
 	"google.golang.org/adk/tool"
 	"google.golang.org/genai"
 )
 
-func NewTrackerAgent(ctx context.Context, adkToolSheets []tool.Tool) (agent.Agent, error) {
+func NewTrackerAgent(ctx context.Context, adkToolSheets []tool.Tool) (adkagent.Agent, error) {
 	if err := tools.InitSheetClient(ctx); err != nil {
 		return nil, err
 	}

@@ -8,7 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"google.golang.org/adk/agent"
+	adkagent "google.golang.org/adk/agent"
 	"google.golang.org/adk/runner"
 	"google.golang.org/genai"
 )
@@ -43,8 +43,8 @@ func (c *CLIRunner) Run(ctx context.Context, text, imagePath string) error {
 		c.userID,
 		c.sessionID,
 		userMsg,
-		agent.RunConfig{
-			StreamingMode:             agent.StreamingModeNone,
+		adkagent.RunConfig{
+			StreamingMode:             adkagent.StreamingModeNone,
 			SaveInputBlobsAsArtifacts: true,
 		},
 	)

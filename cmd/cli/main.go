@@ -24,7 +24,6 @@ func main() {
 
 	ctx := context.Background()
 
-	// Init tools & agent
 	adkTools, err := tools.NewAdkToolSheets()
 	if err != nil {
 		log.Fatalf("Failed to create tools: %v", err)
@@ -35,7 +34,6 @@ func main() {
 		log.Fatalf("Failed to create agent: %v", err)
 	}
 
-	// Create session
 	sessionService := session.InMemoryService()
 	runner, err := runner.New(runner.Config{
 		AppName:        "financial_tracker",
@@ -54,11 +52,11 @@ func main() {
 		log.Fatalf("Failed to create session: %v", err)
 	}
 
-	// CLI Runner
 	cliRunner := cli.NewCLIRunner(runner, sess.Session.ID(), "user_cli")
 
 	fmt.Println(cli.Cyan("=== Financial Tracker Agent CLI ==="))
-	fmt.Println(cli.Gray("Type 'exit' to quit\n"))
+	fmt.Println(cli.Gray("Type 'exit' to quit"))
+	fmt.Println(cli.Gray("For images: leave text empty and provide image path\n"))
 
 	scanner := bufio.NewScanner(os.Stdin)
 	for {
@@ -67,16 +65,24 @@ func main() {
 			break
 		}
 
-		input := strings.TrimSpace(scanner.Text())
-		if input == "" {
-			continue
-		}
-		if input == "exit" || input == "quit" {
+		text := strings.TrimSpace(scanner.Text())
+		if text == "exit" || text == "quit" {
 			fmt.Println(cli.Yellow("Goodbye!"))
 			break
 		}
 
-		if err := cliRunner.Run(ctx, input); err != nil {
+		fmt.Print(cli.Blue("img> "))
+		if !scanner.Scan() {
+			break
+		}
+
+		imagePath := strings.TrimSpace(scanner.Text())
+
+		if text == "" && imagePath == "" {
+			continue
+		}
+
+		if err := cliRunner.Run(ctx, text, imagePath); err != nil {
 			fmt.Printf("%s\n", cli.Red(fmt.Sprintf("Error: %v", err)))
 		}
 	}

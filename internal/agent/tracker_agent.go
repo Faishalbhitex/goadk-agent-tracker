@@ -6,19 +6,19 @@ import (
 
 	"finagent/internal/agent/tools"
 
-	"google.golang.org/adk/agent"
+	adkagent "google.golang.org/adk/agent"
 	"google.golang.org/adk/agent/llmagent"
 	"google.golang.org/adk/model/gemini"
 	"google.golang.org/adk/tool"
 	"google.golang.org/genai"
 )
 
-func NewTrackerAgent(ctx context.Context, adkToolSheets []tool.Tool) (agent.Agent, error) {
+func NewTrackerAgent(ctx context.Context, adkToolSheets []tool.Tool) (adkagent.Agent, error) {
 	if err := tools.InitSheetClient(ctx); err != nil {
 		return nil, err
 	}
 
-	model, err := gemini.NewModel(ctx, "gemini-2.5-flash", &genai.ClientConfig{
+	model, err := gemini.NewModel(ctx, os.Getenv("GEMINI_MODEL"), &genai.ClientConfig{
 		APIKey: os.Getenv("GOOGLE_API_KEY"),
 	})
 	if err != nil {
